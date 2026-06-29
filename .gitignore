@@ -1,0 +1,12 @@
+# personal workout data
+data/*
+
+# keep empty data directory
+!data/.gitkeep
+
+# logs
+*.log
+
+# OS files
+.DS_Store
+
