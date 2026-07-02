@@ -788,3 +788,468 @@ FastAPI + SQLiteで、
 
 ここまでできたら、チーム開発としてかなり良いスタートです。
 
+
+
+できます。むしろ **2人ともバックエンド担当** でも全然OKです。
+
+ただし、分け方を間違えると衝突します。
+
+悪い分担はこれです。
+
+```text
+2人で main.py を同時に触る
+2人で models.py を同時に触る
+2人で DB設計を勝手に変える
+2人で同じAPIを作る
+```
+
+これをやるとGitの衝突や設計ズレが起きます。
+
+なので、バックエンドを分担するなら、**機能単位で分ける**のが一番いいです。
+
+---
+
+# おすすめ分担
+
+筋トレアプリなら、まずこう分けるのがいいです。
+
+```text
+あなた：
+種目関連API
+
+友達：
+筋トレ記録関連API
+```
+
+## あなた担当：種目関連
+
+```text
+exercises API
+
+POST   /exercises
+GET    /exercises
+GET    /exercises/{id}
+PUT    /exercises/{id}
+DELETE /exercises/{id}
+GET    /exercises?keyword=胸
+```
+
+担当するものはこれです。
+
+```text
+種目を登録する
+種目一覧を見る
+種目を検索する
+種目を編集する
+種目を削除する
+```
+
+使うテーブルはこれ。
+
+```text
+exercises
+
+id
+name
+body_part
+created_at
+```
+
+---
+
+## 友達担当：筋トレ記録関連
+
+```text
+workouts API
+
+POST   /workouts
+GET    /workouts
+GET    /workouts/{id}
+PUT    /workouts/{id}
+DELETE /workouts/{id}
+```
+
+担当するものはこれです。
+
+```text
+筋トレ記録を追加する
+筋トレ履歴を見る
+筋トレ記録を編集する
+筋トレ記録を削除する
+```
+
+使うテーブルはこれ。
+
+```text
+workouts
+
+id
+exercise_id
+weight
+reps
+sets
+date
+memo
+created_at
+```
+
+---
+
+# ただし最初に共通設計だけ一緒に決める
+
+2人ともバックエンドをやる場合、最初にここだけは一緒に決めてください。
+
+```text
+1. DB設計
+2. API設計
+3. ファイル構成
+4. エラーの返し方
+5. ブランチの切り方
+```
+
+ここを決めずに別々に書くと、あとで合体できなくなります。
+
+---
+
+# ファイル構成はこうすると分担しやすい
+
+```text
+workout-app/
+├── app/
+│   ├── main.py
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── crud.py
+│   └── routers/
+│       ├── exercises.py
+│       └── workouts.py
+│
+├── requirements.txt
+└── README.md
+```
+
+この構成なら分担しやすいです。
+
+```text
+あなた：
+routers/exercises.py の実装
+schemas.py の Exercise 系
+crud.py の exercise 系関数
+
+友達：
+routers/workouts.py の実装
+schemas.py の Workout 系
+crud.py の workout 系関数
+```
+
+ただし `models.py` はDBの中心なので、最初に2人で決めてから触るのがいいです。
+
+---
+
+# もっと安全な分担
+
+最初はこうすると衝突しにくいです。
+
+```text
+共通担当：
+main.py
+database.py
+models.py
+
+あなた担当：
+exercises.py
+ExerciseCreate
+ExerciseRead
+create_exercise()
+get_exercises()
+update_exercise()
+delete_exercise()
+
+友達担当：
+workouts.py
+WorkoutCreate
+WorkoutRead
+create_workout()
+get_workouts()
+update_workout()
+delete_workout()
+```
+
+つまり、
+
+```text
+共通部分は一緒に決める
+個別機能は別々に作る
+```
+
+です。
+
+---
+
+# 具体的な作業順
+
+## Step 1：2人で設計を決める
+
+まずこれを決めます。
+
+```text
+exercises テーブル
+
+id
+name
+body_part
+created_at
+```
+
+```text
+workouts テーブル
+
+id
+exercise_id
+weight
+reps
+sets
+date
+memo
+created_at
+```
+
+次にAPIを決めます。
+
+```text
+POST /exercises
+GET /exercises
+PUT /exercises/{id}
+DELETE /exercises/{id}
+
+POST /workouts
+GET /workouts
+PUT /workouts/{id}
+DELETE /workouts/{id}
+```
+
+---
+
+## Step 2：共通土台を作る
+
+どちらか1人、または一緒にここを作ります。
+
+```text
+main.py
+database.py
+models.py
+```
+
+この段階では、APIの中身は空でもいいです。
+
+```text
+FastAPIが起動する
+SQLiteにつながる
+テーブルが作られる
+```
+
+ここまでを先に作ります。
+
+---
+
+## Step 3：ブランチを分ける
+
+GitHubでこう分けます。
+
+```text
+main
+```
+
+から、それぞれブランチを切ります。
+
+```text
+feature/exercises-api
+feature/workouts-api
+```
+
+あなたは、
+
+```text
+feature/exercises-api
+```
+
+友達は、
+
+```text
+feature/workouts-api
+```
+
+で作業します。
+
+---
+
+## Step 4：別々にAPIを作る
+
+あなたは種目API。
+
+```text
+POST /exercises
+GET /exercises
+PUT /exercises/{id}
+DELETE /exercises/{id}
+```
+
+友達は記録API。
+
+```text
+POST /workouts
+GET /workouts
+PUT /workouts/{id}
+DELETE /workouts/{id}
+```
+
+---
+
+## Step 5：Pull Requestで合体
+
+それぞれ作れたら、
+
+```text
+Pull Request
+↓
+もう1人が確認
+↓
+main にマージ
+```
+
+します。
+
+直接 `main` にpushしない方がいいです。
+
+---
+
+# 分担表にするとこう
+
+| 担当         | あなた          | 友達          |
+| ---------- | ------------ | ----------- |
+| DB設計       | 一緒に決める       | 一緒に決める      |
+| API設計      | 一緒に決める       | 一緒に決める      |
+| 種目API      | 担当           | 確認          |
+| 筋トレ記録API   | 確認           | 担当          |
+| schemas.py | Exercise系    | Workout系    |
+| crud.py    | exercise系    | workout系    |
+| routers    | exercises.py | workouts.py |
+| テスト        | 友達のAPIを確認    | あなたのAPIを確認  |
+
+この「お互いに相手のAPIをテストする」がかなり大事です。
+
+---
+
+# さらに良い分担：片方がレビュー役もやる
+
+2人ともバックエンドを書くなら、こうすると強いです。
+
+```text
+あなた：
+種目APIを作る
+友達のworkouts APIをレビューする
+
+友達：
+workouts APIを作る
+あなたのexercises APIをレビューする
+```
+
+自分のコードだけ見ているとミスに気づきにくいです。
+
+---
+
+# 最初のIssue例
+
+GitHubのIssueをこう分けるといいです。
+
+```text
+#1 プロジェクト初期設定
+#2 DB接続を作る
+#3 models.py に exercises / workouts を定義
+#4 POST /exercises を作る
+#5 GET /exercises を作る
+#6 PUT /exercises/{id} を作る
+#7 DELETE /exercises/{id} を作る
+#8 POST /workouts を作る
+#9 GET /workouts を作る
+#10 PUT /workouts/{id} を作る
+#11 DELETE /workouts/{id} を作る
+#12 READMEに起動方法を書く
+```
+
+担当はこう。
+
+```text
+#1 #2 #3
+→ 2人で相談、どちらかが実装
+
+#4 #5 #6 #7
+→ あなた
+
+#8 #9 #10 #11
+→ 友達
+
+#12
+→ どちらか
+```
+
+---
+
+# 注意点
+
+特に注意するのはここです。
+
+```text
+workouts は exercises に依存する
+```
+
+なぜなら `workouts.exercise_id` は `exercises.id` を使うからです。
+
+つまり友達が `POST /workouts` を作るには、先に `exercises` のデータが必要です。
+
+なので実装順はこうがいいです。
+
+```text
+1. exercises テーブルを作る
+2. POST /exercises を作る
+3. GET /exercises を作る
+4. workouts テーブルを作る
+5. POST /workouts を作る
+6. GET /workouts を作る
+```
+
+友達は最初、仮の `exercise_id = 1` を使って実装してもいいです。
+
+---
+
+# 結論
+
+2人ともバックエンドをやるなら、こう分担するのが一番いいです。
+
+```text
+共通：
+DB設計・API設計・ファイル構成を一緒に決める
+
+あなた：
+種目API exercises を担当
+
+友達：
+筋トレ記録API workouts を担当
+```
+
+最初の完成ラインはこれです。
+
+```text
+あなたのAPI：
+種目を登録・一覧・編集・削除できる
+
+友達のAPI：
+筋トレ記録を登録・一覧・編集・削除できる
+
+合体後：
+FastAPI + SQLite で筋トレアプリのCRUD APIが動く
+```
+
+これなら2人ともバックエンドを学べるし、作業も衝突しにくいです。
+
