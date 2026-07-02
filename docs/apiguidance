@@ -1,0 +1,790 @@
+友達と開発を分担したいなら、まず大事なのは **「誰が何のコードを書くか」より先に、開発の流れを理解すること**です。
+
+筋トレアプリを FastAPI で作る前提なら、全体の流れはこうです。
+
+```text
+1. 作りたいものを決める
+2. MVPを決める
+3. データ設計を決める
+4. API設計を決める
+5. 画面設計を決める
+6. 役割分担する
+7. GitHubで作業を分ける
+8. 実装する
+9. 動作確認する
+10. 結合する
+11. 修正する
+12. デプロイする
+```
+
+---
+
+# 1. まず「何を作るか」を決める
+
+最初に決めるのは技術ではなく、アプリの機能です。
+
+筋トレアプリなら、最初のMVPはこれくらいでいいです。
+
+```text
+MVP
+
+・種目を登録できる
+・種目一覧を見られる
+・筋トレ記録を追加できる
+・筋トレ履歴を見られる
+・記録を編集できる
+・記録を削除できる
+```
+
+最初からこれは入れない方がいいです。
+
+```text
+後回し
+
+・ログイン
+・React
+・グラフ
+・カレンダー
+・AIメニュー提案
+・SNS機能
+・スマホアプリ化
+```
+
+最初の目標は **BurnFitを作ること** ではなく、
+**「筋トレ記録を保存して見返せる」状態にすること** です。
+
+---
+
+# 2. データ設計を決める
+
+次に、何を保存するか決めます。
+
+最初はこの2つでいいです。
+
+```text
+exercises
+→ 種目マスター
+
+workouts
+→ 実際の筋トレ記録
+```
+
+## exercises テーブル
+
+```text
+id
+name
+body_part
+created_at
+```
+
+例：
+
+```text
+1 | ベンチプレス | 胸
+2 | スクワット | 脚
+3 | ラットプルダウン | 背中
+```
+
+## workouts テーブル
+
+```text
+id
+exercise_id
+weight
+reps
+sets
+date
+memo
+created_at
+```
+
+例：
+
+```text
+1 | 1 | 60 | 10 | 3 | 2026-07-03 | 調子よかった
+```
+
+ここで `exercise_id = 1` は、`exercises` の `id = 1`、つまりベンチプレスを指します。
+
+---
+
+# 3. API設計を決める
+
+FastAPIで作るなら、バックエンドはAPIを作ります。
+
+最初に作るAPIはこれです。
+
+## 種目API
+
+```text
+POST /exercises
+→ 種目を追加する
+
+GET /exercises
+→ 種目一覧を見る
+
+GET /exercises/{id}
+→ 種目1件を見る
+
+PUT /exercises/{id}
+→ 種目を編集する
+
+DELETE /exercises/{id}
+→ 種目を削除する
+```
+
+## 筋トレ記録API
+
+```text
+POST /workouts
+→ 筋トレ記録を追加する
+
+GET /workouts
+→ 筋トレ履歴を見る
+
+GET /workouts/{id}
+→ 筋トレ記録1件を見る
+
+PUT /workouts/{id}
+→ 筋トレ記録を編集する
+
+DELETE /workouts/{id}
+→ 筋トレ記録を削除する
+```
+
+これがCRUDです。
+
+```text
+Create  作成
+Read    読み取り
+Update  更新
+Delete  削除
+```
+
+---
+
+# 4. 画面設計を決める
+
+最初はReactなしでいいです。
+
+まずはAPIが動くことを確認します。
+
+FastAPIには `/docs` という自動API確認画面があります。
+
+そこで、
+
+```text
+POST /exercises
+GET /exercises
+POST /workouts
+GET /workouts
+```
+
+を試せます。
+
+画面を作るなら最初はこれくらいで十分です。
+
+```text
+種目登録画面
+
+[種目名]
+[部位]
+[登録]
+```
+
+```text
+筋トレ記録画面
+
+[種目選択]
+[重量]
+[回数]
+[セット数]
+[日付]
+[メモ]
+[保存]
+```
+
+```text
+履歴画面
+
+2026-07-03
+ベンチプレス 60kg × 10回 × 3セット
+[編集] [削除]
+```
+
+---
+
+# 5. 友達との分担方法
+
+2人でやるなら、一番わかりやすい分担はこれです。
+
+```text
+あなた：
+FastAPI / API / DB設計
+
+友達：
+画面 / 入力フォーム / 表示 / UI
+```
+
+または逆でもいいです。
+
+ただ、今のあなたたちの状況なら、おすすめはこれです。
+
+```text
+あなた：
+Web/APIの仕組みを理解しながらFastAPI側を担当
+
+友達：
+今の.log設計をもとに、必要な機能・入力項目・処理手順を整理
+```
+
+つまり、友達の設計をそのままWeb化するとこうです。
+
+```text
+友達の exercise.log 設計
+↓
+あなたが exercises テーブル/API に変換
+
+友達の workout.log 設計
+↓
+あなたが workouts テーブル/API に変換
+```
+
+---
+
+# 6. 具体的な分担例
+
+## あなた担当：バックエンド
+
+```text
+・FastAPIのセットアップ
+・SQLite接続
+・exercisesテーブル作成
+・workoutsテーブル作成
+・POST /exercises
+・GET /exercises
+・POST /workouts
+・GET /workouts
+・PUT /workouts/{id}
+・DELETE /workouts/{id}
+```
+
+## 友達担当：仕様・画面・テスト
+
+```text
+・種目登録の入力項目を決める
+・部位の種類を決める
+・筋トレ記録の入力項目を決める
+・画面のワイヤーフレームを作る
+・APIを/docsで試す
+・バグを記録する
+・あとでHTML/JS画面を作る
+```
+
+最初から両方がコードを書くより、
+**片方がAPI、片方が仕様・画面・テスト** の方が進めやすいです。
+
+---
+
+# 7. 開発の流れを実際に書くとこう
+
+## Step 1：GitHubリポジトリを作る
+
+```text
+workout-app
+```
+
+ファイル構成は最初これでOKです。
+
+```text
+workout-app/
+├── app/
+│   ├── main.py
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── crud.py
+│   └── routers/
+│       ├── exercises.py
+│       └── workouts.py
+│
+├── requirements.txt
+├── README.md
+└── .gitignore
+```
+
+---
+
+## Step 2：READMEに仕様を書く
+
+READMEに最初こう書きます。
+
+```text
+# Workout App
+
+## MVP
+- 種目を登録できる
+- 種目一覧を取得できる
+- 筋トレ記録を追加できる
+- 筋トレ履歴を取得できる
+- 記録を編集できる
+- 記録を削除できる
+
+## Tech
+- FastAPI
+- SQLite
+- SQLModel
+```
+
+READMEはかなり大事です。
+
+理由は、友達と認識を合わせるためです。
+
+---
+
+## Step 3：DB設計を書く
+
+`docs/db-design.md` みたいなファイルを作ってもいいです。
+
+```text
+exercises
+
+id: int
+name: str
+body_part: str
+created_at: datetime
+```
+
+```text
+workouts
+
+id: int
+exercise_id: int
+weight: float
+reps: int
+sets: int
+date: date
+memo: str
+created_at: datetime
+```
+
+---
+
+## Step 4：API設計を書く
+
+`docs/api-design.md` にこう書きます。
+
+```text
+POST /exercises
+
+Request:
+{
+  "name": "ベンチプレス",
+  "body_part": "胸"
+}
+
+Response:
+{
+  "id": 1,
+  "name": "ベンチプレス",
+  "body_part": "胸"
+}
+```
+
+```text
+POST /workouts
+
+Request:
+{
+  "exercise_id": 1,
+  "weight": 60,
+  "reps": 10,
+  "sets": 3,
+  "date": "2026-07-03",
+  "memo": "調子よかった"
+}
+
+Response:
+{
+  "id": 1,
+  "exercise_id": 1,
+  "weight": 60,
+  "reps": 10,
+  "sets": 3,
+  "date": "2026-07-03",
+  "memo": "調子よかった"
+}
+```
+
+これを決めておくと、バックエンド担当と画面担当が別々に作業できます。
+
+---
+
+# 8. GitHubでの作業分担
+
+2人で作るなら、直接 `main` ブランチに書かない方がいいです。
+
+流れはこうです。
+
+```text
+main
+↓
+feature/add-exercises-api
+↓
+作業
+↓
+Pull Request
+↓
+確認
+↓
+main にマージ
+```
+
+ブランチ名の例。
+
+```text
+feature/create-exercise-api
+feature/list-exercises-api
+feature/create-workout-api
+feature/workout-list-page
+fix/exercise-validation
+docs/api-design
+```
+
+## 作業ルール
+
+```text
+1. mainからブランチを切る
+2. 自分の担当分を実装する
+3. 動作確認する
+4. GitHubにpushする
+5. Pull Requestを出す
+6. もう1人が確認する
+7. mainにマージする
+```
+
+これがチーム開発の基本です。
+
+---
+
+# 9. 実装の順番
+
+おすすめの実装順はこれです。
+
+```text
+1. FastAPIのHello World
+2. DB接続
+3. exercisesテーブル
+4. POST /exercises
+5. GET /exercises
+6. workoutsテーブル
+7. POST /workouts
+8. GET /workouts
+9. PUT /workouts/{id}
+10. DELETE /workouts/{id}
+11. 簡単な画面
+12. デザイン調整
+```
+
+ログインは後です。
+
+Reactも後です。
+
+まずはAPIとDBを完成させます。
+
+---
+
+# 10. 1週間でやるならこう
+
+## 1日目
+
+```text
+・作るものを決める
+・MVPを決める
+・DB設計を書く
+・API設計を書く
+・GitHubリポジトリを作る
+```
+
+## 2日目
+
+```text
+・FastAPI環境構築
+・Hello World
+・SQLite接続
+・exercisesテーブル作成
+```
+
+## 3日目
+
+```text
+・POST /exercises
+・GET /exercises
+・/docsで動作確認
+```
+
+## 4日目
+
+```text
+・workoutsテーブル作成
+・POST /workouts
+・GET /workouts
+```
+
+## 5日目
+
+```text
+・PUT /workouts/{id}
+・DELETE /workouts/{id}
+・バリデーション追加
+```
+
+## 6日目
+
+```text
+・簡単なHTML画面
+・APIと画面をつなぐ
+```
+
+## 7日目
+
+```text
+・バグ修正
+・README整理
+・デモできる状態にする
+```
+
+---
+
+# 11. 最初に絶対決めるべきこと
+
+開発を始める前に、友達とこれだけは決めてください。
+
+```text
+1. MVPに入れる機能
+2. MVPに入れない機能
+3. DBの項目
+4. APIのURL
+5. 誰が何を担当するか
+6. GitHubの使い方
+7. 完成の条件
+```
+
+特に大事なのは **完成の条件** です。
+
+例えばこうです。
+
+```text
+MVP完成条件
+
+・種目を登録できる
+・種目一覧を取得できる
+・筋トレ記録を保存できる
+・筋トレ履歴を取得できる
+・記録を編集できる
+・記録を削除できる
+・データがSQLiteに残る
+・READMEの手順通りに起動できる
+```
+
+これを決めないと、永遠に機能追加して完成しません。
+
+---
+
+# 12. 友達の設計をどう活かすか
+
+友達の設計は無駄ではないです。
+
+ただし、Webアプリではこう置き換えます。
+
+```text
+input()
+→ HTTPリクエスト
+
+print()
+→ HTTPレスポンス
+
+exercise.log
+→ exercises テーブル
+
+workout.log
+→ workouts テーブル
+
+search_result.tmp
+→ JSONレスポンス
+
+grep検索
+→ DB検索
+
+add-exercise.py
+→ POST /exercises
+
+exercise-select.py
+→ GET /exercises
+```
+
+つまり友達の設計は、
+**Web化する前の処理設計** として使えます。
+
+あなたたちはそれを、
+**FastAPI + DB + API設計** に変換すればいいです。
+
+---
+
+# 13. 2人でやるときのおすすめ役割
+
+現実的にはこれがいいです。
+
+## あなた
+
+```text
+・FastAPIの理解
+・HTTP / API / JSONの理解
+・API設計
+・DB設計
+・バックエンド実装
+```
+
+## 友達
+
+```text
+・機能整理
+・入力項目整理
+・画面イメージ作成
+・テスト
+・README整理
+・余裕があればフロントエンド
+```
+
+途中から友達もコードを書くなら、
+
+```text
+友達：
+exercises API担当
+
+あなた：
+workouts API担当
+```
+
+みたいに分けてもいいです。
+
+ただし、最初から2人で同じファイルを触ると衝突しやすいです。
+
+---
+
+# 14. チーム開発で一番大事なもの
+
+一番大事なのは **API設計を先に決めること** です。
+
+なぜなら、API設計が決まれば、
+
+```text
+バックエンド担当：
+APIを作る
+
+フロント担当：
+そのAPIを呼ぶ画面を作る
+```
+
+と分担できるからです。
+
+例えばこれを先に決めます。
+
+```text
+POST /workouts に送るデータはこれ
+
+{
+  "exercise_id": 1,
+  "weight": 60,
+  "reps": 10,
+  "sets": 3,
+  "date": "2026-07-03",
+  "memo": "調子よかった"
+}
+```
+
+これが決まっていれば、フロント担当は画面を作れます。
+
+バックエンド担当はそのJSONを受け取るAPIを作れます。
+
+---
+
+# 15. まず作るべきドキュメント
+
+最低限この3つを作るといいです。
+
+```text
+README.md
+→ 起動方法とアプリ概要
+
+docs/db-design.md
+→ DB設計
+
+docs/api-design.md
+→ API設計
+```
+
+最初から完璧じゃなくていいです。
+
+むしろ作りながら更新すればOKです。
+
+---
+
+# 16. 最終的な開発イメージ
+
+あなたたちの開発の流れはこうです。
+
+```text
+友達とMVPを決める
+↓
+DB設計を書く
+↓
+API設計を書く
+↓
+GitHubリポジトリを作る
+↓
+FastAPIでAPIを作る
+↓
+/docsでAPIを試す
+↓
+SQLiteに保存する
+↓
+簡単な画面を作る
+↓
+画面からAPIを呼ぶ
+↓
+動作確認する
+↓
+READMEを整える
+↓
+MVP完成
+```
+
+---
+
+# 結論
+
+友達と分担するなら、最初はこう進めるのが一番いいです。
+
+```text
+1. まずMVPを決める
+2. DB設計を決める
+3. API設計を決める
+4. GitHubで管理する
+5. あなたはFastAPI/API/DBを担当
+6. 友達は仕様整理/画面/テストを担当
+7. まずはログインなし・ReactなしでCRUDを完成させる
+```
+
+最初の完成形はこれです。
+
+```text
+FastAPI + SQLiteで、
+種目と筋トレ記録のCRUD APIが動く
+
+そして /docs から登録・取得・編集・削除を試せる
+```
+
+ここまでできたら、チーム開発としてかなり良いスタートです。
+
