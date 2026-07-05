@@ -1,0 +1,127 @@
+はい、**基本は最初から別々で書いた方がいい**です。
+
+理由は、あとで必ずズレるからです。
+
+```text
+スキーマ → 外から受け取る・外に返す形
+DBモデル → DBに保存する形
+```
+
+最初は似ていても、アプリを作っていくとこうなります。
+
+```text
+作成時に必要:
+name
+description
+target_body_part_id
+level_id
+
+DBに保存する:
+id
+name
+description
+target_body_part_id
+level_id
+owner_id
+created_at
+updated_at
+
+APIで返す:
+id
+name
+description
+target_body_part
+level
+owner
+```
+
+全部ちょっとずつ違います。
+
+---
+
+特に FastAPI + SQLAlchemy なら、最初からこう分けるのがおすすめです。
+
+```text
+models/
+  exercise.py     # DBモデル
+
+schemas/
+  exercise.py     # Pydanticスキーマ
+```
+
+例えば、
+
+```python
+# models/exercise.py
+class Exercise(Base):
+    __tablename__ = "exercises"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    owner_id = Column(Integer)
+```
+
+```python
+# schemas/exercise.py
+class ExerciseCreate(BaseModel):
+    name: str
+
+class ExerciseOut(BaseModel):
+    id: int
+    name: str
+```
+
+---
+
+なぜ分けるかというと、**ユーザーに触らせたくない値**があるからです。
+
+たとえば `owner_id`。
+
+これはユーザーに送らせるより、ログイン中のユーザーからサーバー側で決めたいです。
+
+```python
+exercise = Exercise(
+    name=exercise_create.name,
+    owner_id=current_user.id
+)
+```
+
+もしDBモデルをそのまま入力に使うと、悪いユーザーがこう送れる可能性があります。
+
+```json
+{
+  "name": "デッドリフト",
+  "owner_id": 999
+}
+```
+
+これだと他人のデータとして作れてしまうかもしれません。
+
+だから、作成用スキーマには `owner_id` を入れない。
+
+```python
+class ExerciseCreate(BaseModel):
+    name: str
+```
+
+でもDBモデルには保存する。
+
+```python
+class Exercise(Base):
+    owner_id = Column(Integer)
+```
+
+---
+
+なので結論は、
+
+**小さい練習アプリなら一時的に雑でもOK。**
+**ちゃんとしたAPIアプリなら最初から DBモデル と スキーマ は分ける。**
+
+です。
+
+あなたの理解でいうと、
+
+**注文用紙と倉庫構造は、最初から別紙にしておく方が安全**
+
+です。
