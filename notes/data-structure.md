@@ -43,3 +43,23 @@ SQLでは、
 固定データ系のテーブル
 流動データ系のテーブル
 に分ける
+
+{
+  "exercises": [
+    {
+      "exercise_id": 1,
+      "exercise": "ベンチプレス",
+      "target": "胸"
+    }
+  ],
+  "logs": [
+    {
+      "log_id": 1,
+      "exercise_id": 1,
+      "done_at": "2026-07-05",
+      "weight": 60,
+      "reps": 10,
+      "set_number": 1
+    }
+  ]
+}
