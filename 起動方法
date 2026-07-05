@@ -1,1 +1,3 @@
+〇〇.exe .　で今いるカレントディレクトリーで起動できる
+
 uvicorn main:app --reload
