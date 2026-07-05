@@ -6,11 +6,11 @@
 
 ## 記録データ
 - "log_id"  #記録id
-- "exercise_id" #種目
+- "exercise_id" #種目ID
 - "done_at"　#日時
 - "weight" #重量
 - "reps"　#回数
-- "set" #セット数
+- "set_number" #セット数
 
 ＊記録データと保存データは別物で"exercise_id"だけ共有
 
