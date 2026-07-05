@@ -1,4 +1,4 @@
-# Jsonデータ構造
+# JSONデータ構造
 ## 保存データ
 - "exercise" #種目
 - "target" #部位
